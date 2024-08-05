@@ -3,7 +3,7 @@ module github.com/crewjam/saml
 go 1.22
 
 require (
-	github.com/beevik/etree v1.4.0
+	github.com/beevik/etree v1.4.1
 	github.com/crewjam/httperr v0.2.0
 	github.com/dchest/uniuri v1.2.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -13,7 +13,7 @@ require (
 	github.com/russellhaering/goxmldsig v1.4.0
 	github.com/stretchr/testify v1.8.4
 	github.com/zenazn/goji v1.0.1
-	golang.org/x/crypto v0.24.0
+	golang.org/x/crypto v0.25.0
 	gotest.tools v2.2.0+incompatible
 )
 
