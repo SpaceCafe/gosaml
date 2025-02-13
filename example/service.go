@@ -158,7 +158,7 @@ func main() {
 	authMux := web.New()
 	authMux.Use(samlSP.RequireAccount)
 	authMux.Get("/whoami", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := pretty.Fprintf(w, "%# v", r); err != nil {
+		if _, err := pretty.Fprintf(w, "%#v", r); err != nil {
 			panic(err)
 		}
 	})
