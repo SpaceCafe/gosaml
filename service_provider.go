@@ -1709,7 +1709,7 @@ func (sp *ServiceProvider) ValidateLogoutRequestRequest(req *http.Request) error
 	return sp.ValidateLogoutRequestForm(req.PostForm.Get("SAMLRequest"))
 }
 
-// ValidatePostLogoutRequest returns a nil error if the logout response is valid.
+// ValidateLogoutRequestForm returns a nil error if the logout response is valid.
 func (sp *ServiceProvider) ValidateLogoutRequestForm(postFormData string) error {
 	rawRequestBuf, err := base64.StdEncoding.DecodeString(postFormData)
 	if err != nil {
@@ -1739,7 +1739,7 @@ func (sp *ServiceProvider) ValidateLogoutRequestForm(postFormData string) error 
 	return nil
 }
 
-// ValidateRedirectLogoutRequest returns a nil error if the logout response is valid.
+// ValidateLogoutRequestRedirect returns a nil error if the logout response is valid.
 // URL Binding appears to be gzip / flate encoded
 // See https://www.oasis-open.org/committees/download.php/20645/sstc-saml-tech-overview-2%200-draft-10.pdf  6.6
 func (sp *ServiceProvider) ValidateLogoutRequestRedirect(queryParameterData string) error {

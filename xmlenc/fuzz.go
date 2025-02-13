@@ -8,6 +8,7 @@ import (
 	"github.com/beevik/etree"
 )
 
+// #nosec G101 -- This private key is used only for testing
 var testKey = func() *rsa.PrivateKey {
 	const keyStr = `-----BEGIN RSA PRIVATE KEY-----
 MIICXQIBAAKBgQDkXTUsWzRVpUHjbDpWCfYDfXmQ/q4LkaioZoTpu4ut1Q3eQC5t

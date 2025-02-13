@@ -41,7 +41,7 @@ func CreateLink(_ web.C, w http.ResponseWriter, r *http.Request) {
 	}
 	links[l.ShortLink] = l
 
-	fmt.Fprintf(w, "%s\n", l.ShortLink)
+	_, _ = fmt.Fprintf(w, "%s\n", l.ShortLink)
 }
 
 // ServeLink handles requests to redirect to a link
@@ -59,7 +59,7 @@ func ListLinks(_ web.C, w http.ResponseWriter, r *http.Request) {
 	account := r.Header.Get("X-Remote-User")
 	for _, l := range links {
 		if l.Owner == account {
-			fmt.Fprintf(w, "%s\n", l.ShortLink)
+			_, _ = fmt.Fprintf(w, "%s\n", l.ShortLink)
 		}
 	}
 }
