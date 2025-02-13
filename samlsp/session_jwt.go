@@ -35,11 +35,11 @@ func (c JWTSessionCodec) New(assertion *saml.Assertion) (Session, error) {
 	now := saml.TimeNow()
 	claims := JWTSessionClaims{}
 	claims.SAMLSession = true
-	claims.Audience = c.Audience
+	claims.Audience = jwt.ClaimStrings{c.Audience}
 	claims.Issuer = c.Issuer
-	claims.IssuedAt = now.Unix()
-	claims.ExpiresAt = now.Add(c.MaxAge).Unix()
-	claims.NotBefore = now.Unix()
+	claims.IssuedAt = &jwt.NumericDate{Time: now}
+	claims.ExpiresAt = &jwt.NumericDate{Time: now.Add(c.MaxAge)}
+	claims.NotBefore = &jwt.NumericDate{Time: now}
 
 	if sub := assertion.Subject; sub != nil {
 		if nameID := sub.NameID; nameID != nil {
@@ -89,9 +89,9 @@ func (c JWTSessionCodec) Encode(s Session) (string, error) {
 // Decode parses the serialized session that may have been returned by Encode
 // and returns a Session.
 func (c JWTSessionCodec) Decode(signed string) (Session, error) {
-	parser := jwt.Parser{
-		ValidMethods: []string{c.SigningMethod.Alg()},
-	}
+	parser := jwt.NewParser(
+		jwt.WithValidMethods([]string{c.SigningMethod.Alg()}),
+	)
 	claims := JWTSessionClaims{}
 	_, err := parser.ParseWithClaims(signed, &claims, func(*jwt.Token) (interface{}, error) {
 		return c.Key.Public(), nil
@@ -114,7 +114,7 @@ func (c JWTSessionCodec) Decode(signed string) (Session, error) {
 
 // JWTSessionClaims represents the JWT claims in the encoded session
 type JWTSessionClaims struct {
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 	Attributes  Attributes `json:"attr"`
 	SAMLSession bool       `json:"saml-session"`
 }

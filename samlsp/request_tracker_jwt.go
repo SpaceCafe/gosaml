@@ -51,9 +51,9 @@ func (s JWTTrackedRequestCodec) Encode(value TrackedRequest) (string, error) {
 
 // Decode returns a Tracked request from an encoded string.
 func (s JWTTrackedRequestCodec) Decode(signed string) (*TrackedRequest, error) {
-	parser := jwt.Parser{
-		ValidMethods: []string{s.SigningMethod.Alg()},
-	}
+	parser := jwt.NewParser(
+		jwt.WithValidMethods([]string{s.SigningMethod.Alg()}),
+	)
 	claims := JWTTrackedRequestClaims{}
 	_, err := parser.ParseWithClaims(signed, &claims, func(*jwt.Token) (interface{}, error) {
 		return s.Key.Public(), nil
