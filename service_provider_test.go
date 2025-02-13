@@ -986,8 +986,8 @@ func TestServiceProviderMismatchedDestinationsWithSignaturePresent(t *testing.T)
 
 	req := http.Request{PostForm: url.Values{}}
 	s.AcsURL = mustParseURL("https://wrong/saml2/acs")
-	bytes, _ := test.responseDom(t).WriteToBytes()
-	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(bytes))
+	respBytes, _ := test.responseDom(t).WriteToBytes()
+	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(respBytes))
 	_, err = s.ParseResponse(&req, []string{"id-9e61753d64e928af5a7a341a97f420c9"})
 	assert.Check(t, is.Error(err.(*InvalidResponseError).PrivateErr,
 		"`Destination` does not match AcsURL (expected \"https://wrong/saml2/acs\", actual \"https://15661444.ngrok.io/saml2/acs\")"))
@@ -1006,8 +1006,8 @@ func TestServiceProviderMissingDestinationWithSignaturePresent(t *testing.T) {
 	assert.Check(t, err)
 
 	req := http.Request{PostForm: url.Values{}}
-	bytes, _ := removeDestinationFromDocument(addSignatureToDocument(test.responseDom(t))).WriteToBytes()
-	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(bytes))
+	respBytes, _ := removeDestinationFromDocument(addSignatureToDocument(test.responseDom(t))).WriteToBytes()
+	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(respBytes))
 	_, err = s.ParseResponse(&req, []string{"id-9e61753d64e928af5a7a341a97f420c9"})
 	assert.Check(t, is.Error(err.(*InvalidResponseError).PrivateErr,
 		"`Destination` does not match AcsURL (expected \"https://15661444.ngrok.io/saml2/acs\", actual \"\")"))
@@ -1027,8 +1027,8 @@ func TestSPMismatchedDestinationsWithSignaturePresent(t *testing.T) {
 
 	req := http.Request{PostForm: url.Values{}}
 	test.replaceDestination("https://wrong/saml2/acs")
-	bytes, _ := addSignatureToDocument(test.responseDom(t)).WriteToBytes()
-	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(bytes))
+	respBytes, _ := addSignatureToDocument(test.responseDom(t)).WriteToBytes()
+	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(respBytes))
 	_, err = s.ParseResponse(&req, []string{"id-9e61753d64e928af5a7a341a97f420c9"})
 	assert.Check(t, is.Error(err.(*InvalidResponseError).PrivateErr,
 		"`Destination` does not match AcsURL (expected \"https://15661444.ngrok.io/saml2/acs\", actual \"https://wrong/saml2/acs\")"))
@@ -1048,8 +1048,8 @@ func TestSPMismatchedDestinationsWithNoSignaturePresent(t *testing.T) {
 
 	req := http.Request{PostForm: url.Values{}}
 	test.replaceDestination("https://wrong/saml2/acs")
-	bytes, _ := test.responseDom(t).WriteToBytes()
-	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(bytes))
+	respBytes, _ := test.responseDom(t).WriteToBytes()
+	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(respBytes))
 	_, err = s.ParseResponse(&req, []string{"id-9e61753d64e928af5a7a341a97f420c9"})
 	assert.Check(t, is.Error(err.(*InvalidResponseError).PrivateErr,
 		"`Destination` does not match AcsURL (expected \"https://15661444.ngrok.io/saml2/acs\", actual \"https://wrong/saml2/acs\")"))
@@ -1069,8 +1069,8 @@ func TestSPMissingDestinationWithSignaturePresent(t *testing.T) {
 
 	req := http.Request{PostForm: url.Values{}}
 	test.replaceDestination("")
-	bytes, _ := addSignatureToDocument(test.responseDom(t)).WriteToBytes()
-	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(bytes))
+	respBytes, _ := addSignatureToDocument(test.responseDom(t)).WriteToBytes()
+	req.PostForm.Set("SAMLResponse", base64.StdEncoding.EncodeToString(respBytes))
 	_, err = s.ParseResponse(&req, []string{"id-9e61753d64e928af5a7a341a97f420c9"})
 	assert.Check(t, is.Error(err.(*InvalidResponseError).PrivateErr,
 		"`Destination` does not match AcsURL (expected \"https://15661444.ngrok.io/saml2/acs\", actual \"\")"))
