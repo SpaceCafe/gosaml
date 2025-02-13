@@ -1,4 +1,4 @@
-module github.com/crewjam/saml
+module github.com/spacecafe/gosaml
 
 go 1.23
 

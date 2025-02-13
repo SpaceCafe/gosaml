@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/crewjam/saml"
+	"github.com/spacecafe/gosaml"
 )
 
 // Middleware implements middleware than allows a web application
