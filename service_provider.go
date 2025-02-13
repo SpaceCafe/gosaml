@@ -640,16 +640,16 @@ func (sp *ServiceProvider) handleArtifactRequest(ctx context.Context, artifactID
 	}
 	defer func() {
 		if err := response.Body.Close(); err != nil {
-			logger.DefaultLogger.Printf("Error while closing response body during artifact resolution: %v", err)
+			logger.DefaultLogger.Printf("error while closing response body during artifact resolution: %v", err)
 		}
 	}()
 	if response.StatusCode != 200 {
-		retErr.PrivateErr = fmt.Errorf("Error during artifact resolution: HTTP status %d (%s)", response.StatusCode, response.Status)
+		retErr.PrivateErr = fmt.Errorf("error during artifact resolution: HTTP status %d (%s)", response.StatusCode, response.Status)
 		return nil, retErr
 	}
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		retErr.PrivateErr = fmt.Errorf("Error during artifact resolution: %s", err)
+		retErr.PrivateErr = fmt.Errorf("error during artifact resolution: %s", err)
 		return nil, retErr
 	}
 	assertion, err := sp.ParseXMLArtifactResponse(responseBody, possibleRequestIDs, artifactResolveRequest.ID)
@@ -1143,7 +1143,11 @@ func (sp *ServiceProvider) validateSignature(el *etree.Element) error {
 	}
 	el, err = etreeutils.NSDetatch(ctx, el)
 	if err != nil {
-		return fmt.Errorf("cannot validate signature on %s: %v", el.Tag, err)
+		if el != nil {
+			return fmt.Errorf("cannot validate signature on %s: %v", el.Tag, err)
+		} else {
+			return fmt.Errorf("cannot validate signature: %v", err)
+		}
 	}
 
 	if sp.SignatureVerifier != nil {

@@ -1,7 +1,6 @@
 package xmlenc
 
 import (
-
 	// nolint: gas
 	"crypto/rsa"
 	"crypto/x509"
@@ -9,7 +8,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-
 	"strings"
 
 	"github.com/beevik/etree"
