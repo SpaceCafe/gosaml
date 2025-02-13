@@ -2,6 +2,7 @@ package samlidp
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -88,7 +89,7 @@ func (s *Server) HandlePutUser(c web.C, w http.ResponseWriter, r *http.Request) 
 		switch {
 		case err == nil:
 			user.HashedPassword = existingUser.HashedPassword
-		case err == ErrNotFound:
+		case errors.Is(err, ErrNotFound):
 			// nop
 		default:
 			s.logger.Printf("ERROR: %s", err)

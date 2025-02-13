@@ -762,10 +762,10 @@ func (sp *ServiceProvider) parseArtifactResponse(artifactResponseEl *etree.Eleme
 
 	var signatureRequirement signatureRequirement
 	sigErr := sp.validateSignature(artifactResponseEl)
-	switch sigErr {
-	case nil:
+	switch {
+	case sigErr == nil:
 		signatureRequirement = signatureNotRequired
-	case errSignatureElementNotPresent:
+	case errors.Is(sigErr, errSignatureElementNotPresent):
 		signatureRequirement = signatureRequired
 	default:
 		retErr.PrivateErr = sigErr
@@ -849,7 +849,7 @@ func (sp *ServiceProvider) parseResponse(responseEl *etree.Element, possibleRequ
 	var responseHasSignature bool
 	if signatureRequirement == signatureRequired {
 		responseSignatureErr = sp.validateSignature(responseEl)
-		if responseSignatureErr != errSignatureElementNotPresent {
+		if !errors.Is(responseSignatureErr, errSignatureElementNotPresent) {
 			responseHasSignature = true
 		}
 
@@ -898,11 +898,11 @@ func (sp *ServiceProvider) parseResponse(responseEl *etree.Element, possibleRequ
 	}
 
 	if signatureRequirement == signatureRequired {
-		switch responseSignatureErr {
-		case nil:
+		switch {
+		case responseSignatureErr == nil:
 			// since the request has a signature, none of the Assertions need one
 			signatureRequirement = signatureNotRequired
-		case errSignatureElementNotPresent:
+		case errors.Is(responseSignatureErr, errSignatureElementNotPresent):
 			// the request has no signature, so assertions must be signed
 			signatureRequirement = signatureRequired // nop
 		default:

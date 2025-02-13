@@ -3,6 +3,7 @@ package samlsp
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"net/http"
 
 	"github.com/crewjam/saml"
@@ -114,7 +115,7 @@ func (m *Middleware) RequireAccount(handler http.Handler) http.Handler {
 			handler.ServeHTTP(w, r)
 			return
 		}
-		if err == ErrNoSession {
+		if errors.Is(err, ErrNoSession) {
 			m.HandleStartAuthFlow(w, r)
 			return
 		}
@@ -196,7 +197,7 @@ func (m *Middleware) CreateSessionFromAssertion(w http.ResponseWriter, r *http.R
 	if trackedRequestIndex := r.Form.Get("RelayState"); trackedRequestIndex != "" {
 		trackedRequest, err := m.RequestTracker.GetTrackedRequest(r, trackedRequestIndex)
 		if err != nil {
-			if err == http.ErrNoCookie && m.ServiceProvider.AllowIDPInitiated {
+			if errors.Is(err, http.ErrNoCookie) && m.ServiceProvider.AllowIDPInitiated {
 				if uri := r.Form.Get("RelayState"); uri != "" {
 					redirectURI = uri
 				}
