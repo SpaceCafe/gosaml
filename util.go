@@ -2,7 +2,10 @@ package saml
 
 import (
 	"crypto/rand"
+	"fmt"
 	"io"
+	"net/url"
+	"strings"
 	"time"
 
 	dsig "github.com/russellhaering/goxmldsig"
@@ -29,4 +32,29 @@ func randomBytes(n int) []byte {
 		panic(err)
 	}
 	return rv
+}
+
+func parseQuery(query string) (params map[string]string, err error) {
+	params = make(map[string]string)
+	for query != "" {
+		var key string
+		key, query, _ = strings.Cut(query, "&")
+		if strings.Contains(key, ";") {
+			err = fmt.Errorf("invalid semicolon separator in query")
+			continue
+		}
+		if key == "" {
+			continue
+		}
+		key, value, _ := strings.Cut(key, "=")
+		key, err1 := url.QueryUnescape(key)
+		if err1 != nil {
+			if err == nil {
+				err = err1
+			}
+			continue
+		}
+		params[key] = value
+	}
+	return params, err
 }

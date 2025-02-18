@@ -1161,6 +1161,68 @@ func (sp *ServiceProvider) validateSignature(el *etree.Element) error {
 	return nil
 }
 
+var (
+	x509SignatureAlgorithmByIdentifier = map[string]x509.SignatureAlgorithm{
+		dsig.RSASHA1SignatureMethod:     x509.SHA1WithRSA,
+		dsig.RSASHA256SignatureMethod:   x509.SHA256WithRSA,
+		dsig.RSASHA384SignatureMethod:   x509.SHA384WithRSA,
+		dsig.RSASHA512SignatureMethod:   x509.SHA512WithRSA,
+		dsig.ECDSASHA1SignatureMethod:   x509.ECDSAWithSHA1,
+		dsig.ECDSASHA256SignatureMethod: x509.ECDSAWithSHA256,
+		dsig.ECDSASHA384SignatureMethod: x509.ECDSAWithSHA384,
+		dsig.ECDSASHA512SignatureMethod: x509.ECDSAWithSHA512,
+	}
+	errSignatureMethodNotPresent = errors.New("signature method element not present")
+)
+
+// validateSignature returns nil if the external signature (e.g. from query param) is valid.
+func (sp *ServiceProvider) validateRedirectSignature(req *http.Request) error {
+	var (
+		signatureAlgorithm x509.SignatureAlgorithm
+		ok                 bool
+		signedContent      bytes.Buffer
+	)
+
+	// Extract parameters.
+	if signatureAlgorithm, ok = x509SignatureAlgorithmByIdentifier[req.URL.Query().Get("SigAlg")]; !ok {
+		return errSignatureMethodNotPresent
+	}
+	signature := req.URL.Query().Get("Signature")
+	if signature == "" {
+		return errSignatureElementNotPresent
+	}
+
+	// Decode signature.
+	signatureBytes, err := base64.StdEncoding.DecodeString(signature)
+	if err != nil {
+		return fmt.Errorf("could not decode signature: %v", err)
+	}
+
+	// Rebuild query param for signature verification, because the order and original URL-encodings are important.
+	// https://docs.oasis-open.org/security/saml/v2.0/saml-bindings-2.0-os.pdf
+	queryParams, err := parseQuery(req.URL.RawQuery)
+	if err != nil {
+		return err
+	}
+	for _, key := range []string{"SAMLRequest", "SAMLResponse", "RelayState", "SigAlg"} {
+		if value, ok := queryParams[key]; ok && value != "" {
+			if signedContent.Len() > 0 {
+				signedContent.WriteByte('&')
+			}
+			signedContent.WriteString(key)
+			signedContent.WriteByte('=')
+			signedContent.WriteString(value)
+		}
+	}
+
+	certs, err := sp.getIDPSigningCerts()
+	if err != nil && len(certs) > 0 {
+		return fmt.Errorf("cannot validate signature: %v", err)
+	}
+
+	return certs[0].CheckSignature(signatureAlgorithm, signedContent.Bytes(), signatureBytes)
+}
+
 // SignLogoutRequest adds the `Signature` element to the `LogoutRequest`.
 func (sp *ServiceProvider) SignLogoutRequest(req *LogoutRequest) error {
 	keyPair := tls.Certificate{
@@ -1480,7 +1542,7 @@ func (sp *ServiceProvider) nameIDFormat() string {
 // ValidateLogoutResponseRequest validates the LogoutResponse content from the request
 func (sp *ServiceProvider) ValidateLogoutResponseRequest(req *http.Request) error {
 	if data := req.URL.Query().Get("SAMLResponse"); data != "" {
-		return sp.ValidateLogoutResponseRedirect(data)
+		return sp.ValidateLogoutResponseRedirect(data, req)
 	}
 
 	err := req.ParseForm()
@@ -1532,7 +1594,7 @@ func (sp *ServiceProvider) ValidateLogoutResponseForm(postFormData string) error
 //
 // URL Binding appears to be gzip / flate encoded
 // See https://www.oasis-open.org/committees/download.php/20645/sstc-saml-tech-overview-2%200-draft-10.pdf  6.6
-func (sp *ServiceProvider) ValidateLogoutResponseRedirect(queryParameterData string) error {
+func (sp *ServiceProvider) ValidateLogoutResponseRedirect(queryParameterData string, req *http.Request) error {
 	retErr := &InvalidResponseError{
 		Now: TimeNow(),
 	}
@@ -1560,7 +1622,11 @@ func (sp *ServiceProvider) ValidateLogoutResponseRedirect(queryParameterData str
 		return retErr
 	}
 
-	if err := sp.validateSignature(doc.Root()); err != nil {
+	err = sp.validateSignature(doc.Root())
+	if errors.Is(err, errSignatureElementNotPresent) {
+		err = sp.validateRedirectSignature(req)
+	}
+	if err != nil {
 		retErr.PrivateErr = err
 		return retErr
 	}
@@ -1702,7 +1768,7 @@ func elementToString(el *etree.Element) string {
 // ValidateLogoutRequestRequest validates the LogoutRequest content from the request
 func (sp *ServiceProvider) ValidateLogoutRequestRequest(req *http.Request) error {
 	if data := req.URL.Query().Get("SAMLRequest"); data != "" {
-		return sp.ValidateLogoutRequestRedirect(data)
+		return sp.ValidateLogoutRequestRedirect(data, req)
 	}
 
 	err := req.ParseForm()
@@ -1746,7 +1812,7 @@ func (sp *ServiceProvider) ValidateLogoutRequestForm(postFormData string) error 
 // ValidateLogoutRequestRedirect returns a nil error if the logout response is valid.
 // URL Binding appears to be gzip / flate encoded
 // See https://www.oasis-open.org/committees/download.php/20645/sstc-saml-tech-overview-2%200-draft-10.pdf  6.6
-func (sp *ServiceProvider) ValidateLogoutRequestRedirect(queryParameterData string) error {
+func (sp *ServiceProvider) ValidateLogoutRequestRedirect(queryParameterData string, req *http.Request) error {
 	rawRequestBuf, err := base64.StdEncoding.DecodeString(queryParameterData)
 	if err != nil {
 		return fmt.Errorf("unable to parse base64: %s", err)
@@ -1774,14 +1840,13 @@ func (sp *ServiceProvider) ValidateLogoutRequestRedirect(queryParameterData stri
 
 	responseEl := doc.Root()
 	if responseEl == nil {
-		// TODO: Signature and SigAlg can be carried via the query parameter instead of being passed in the SAMLResponse
 		return nil
 	}
-	if err = sp.validateSignature(responseEl); err != nil {
-		return err
+	err = sp.validateSignature(responseEl)
+	if errors.Is(err, errSignatureElementNotPresent) {
+		err = sp.validateRedirectSignature(req)
 	}
-
-	return nil
+	return err
 }
 
 // validateLogoutRequest validates the LogoutRequest fields. Returns a nil error if the LogoutRequest is valid.
